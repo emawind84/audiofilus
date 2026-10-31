@@ -336,6 +336,13 @@ func NewApp(paths config.Paths, offline bool) (*App, error) {
 	if !offline && (sfx.Gain(cfg.UI.Sounds) > 0 || sfx.Gain(cfg.UI.UISounds) > 0) {
 		a.startSounds() // la salida de audio se prepara ya, en segundo plano
 	}
+	// En las portátiles con backend SDL2/PortMaster el vsync puede bloquearse en
+	// SDL_GL_SwapWindow durante segundos con ciertos controladores. En ese caso
+	// la interfaz no llega ni a la pantalla principal y se ve como si se quedara
+	// pegada al splash. En el escritorio se mantiene el comportamiento normal.
+	if handheldUI {
+		ebiten.SetVsyncEnabled(false)
+	}
 	a.search.row = 1 // el teclado en pantalla empieza en la Q, no en los números
 	if !hasMusicDir(cfg.MusicDirs) {
 		a.firstRun = true
