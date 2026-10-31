@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"log"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 )
@@ -30,7 +29,7 @@ func AudioOutput() string {
 	// muOS: sus scripts dejan /run/muos/headphones con los audífonos de cable;
 	// el bluetooth sale de PipeWire.
 	if _, err := os.Stat(muosRun); err == nil {
-		if info, err := exec.Command("wpctl", "inspect", "@DEFAULT_AUDIO_SINK@").Output(); err == nil && strings.Contains(string(info), "bluez") {
+		if info, err := runCommand("wpctl", "inspect", "@DEFAULT_AUDIO_SINK@"); err == nil && strings.Contains(string(info), "bluez") {
 			return OutputBluetooth
 		}
 		if _, err := os.Stat(muosRun + "/headphones"); err == nil {
@@ -58,7 +57,7 @@ func AudioOutput() string {
 	out := ""
 	start := time.Now()
 	if name := pactlDefaultSink(); name != "" {
-		if sinks, err := exec.Command("pactl", "list", "sinks").Output(); err == nil {
+		if sinks, err := runCommand("pactl", "list", "sinks"); err == nil {
 			out = outputKind(name, string(sinks))
 		}
 	}
@@ -71,7 +70,7 @@ func AudioOutput() string {
 	}
 	// ArkOS: sin PulseAudio; su script de audífonos cambia "Playback Path" de
 	// ALSA a HP o SPK.
-	if out, err := exec.Command("amixer", "-c", "0", "sget", "Playback Path").Output(); err == nil && fileExists(arkPause) {
+	if out, err := runCommand("amixer", "-c", "0", "sget", "Playback Path"); err == nil && fileExists(arkPause) {
 		switch s := string(out); {
 		case strings.Contains(s, "'HP'"):
 			return OutputWired
@@ -85,7 +84,7 @@ func AudioOutput() string {
 // pactlDefaultSink es la salida por defecto de PulseAudio (pactl info: es
 // barato, no consulta las tarjetas), o "" si no hay pactl.
 func pactlDefaultSink() string {
-	info, err := exec.Command("pactl", "info").Output()
+	info, err := runCommand("pactl", "info")
 	if err != nil {
 		return ""
 	}

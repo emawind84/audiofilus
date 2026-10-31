@@ -5,9 +5,21 @@ package platform
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestOutputKind comprueba cómo se clasifica la salida de audio por defecto.
+func TestRunCommandTimeout(t *testing.T) {
+	start := time.Now()
+	_, err := runCommand("sh", "-c", "sleep 3")
+	if err == nil {
+		t.Fatal("runCommand should time out on a sleeping child process")
+	}
+	if d := time.Since(start); d > 2*time.Second {
+		t.Fatalf("runCommand took too long: %v", d)
+	}
+}
+
 func TestOutputKind(t *testing.T) {
 	speaker := `Sink #50
 	State: RUNNING

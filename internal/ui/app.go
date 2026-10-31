@@ -715,7 +715,11 @@ func (a *App) exitSleep(tellService bool) {
 	a.sleeping, a.frozen = false, false
 	a.fadingIn, a.sleepFade = true, 0
 	a.lastInput = a.t
-	ebiten.SetFPSMode(ebiten.FPSModeVsyncOn)
+	if handheldUI {
+		ebiten.SetVsyncEnabled(true)
+	} else {
+		ebiten.SetFPSMode(ebiten.FPSModeVsyncOn)
+	}
 	ebiten.SetTPS(ebiten.DefaultTPS)
 }
 
@@ -730,7 +734,15 @@ func (a *App) updateSleep() {
 		// servicio avise de que despertó (Client.OnWake). La imagen negra se
 		// queda en pantalla.
 		a.frozen = true
-		ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMinimum)
+		// En SDL2 (PortMaster/R36S y otros handhelds) el modo de FPS "vsync
+		// minimum" puede quedarse colgado en el swap de la ventana con pausas de
+		// varios segundos. Ahí se desactiva el vsync para no entrar en ese
+		// camino del backend mientras la pantalla está apagada.
+		if handheldUI {
+			ebiten.SetVsyncEnabled(false)
+		} else {
+			ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMinimum)
+		}
 		// Un Update por fotograma: con TPS fijo, tras un rato quieto Ebitengine
 		// hace varios Update seguidos para ponerse al día y el fotograma
 		// siguiente se queda sin ninguno (y no ve, p. ej., soltar un botón).

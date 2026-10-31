@@ -4,6 +4,7 @@
 package platform
 
 import (
+	"context"
 	"log"
 	"os/exec"
 	"strconv"
@@ -78,12 +79,21 @@ func (desktop) SystemVolume() int      { return pactlVolume() }
 func (desktop) LidClosed() bool        { return false }
 func (desktop) SetVolumeKeys(bool)     {}
 func (desktop) SetSystemVolume(v int) error {
-	return exec.Command("pactl", "set-sink-volume", "@DEFAULT_SINK@", strconv.Itoa(v)+"%").Run()
+	_, err := runCommand("pactl", "set-sink-volume", "@DEFAULT_SINK@", strconv.Itoa(v)+"%")
+	return err
+}
+
+const execTimeout = 500 * time.Millisecond
+
+func runCommand(name string, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), execTimeout)
+	defer cancel()
+	return exec.CommandContext(ctx, name, args...).Output()
 }
 
 // pactlVolume lee el volumen de la salida por defecto con pactl.
 func pactlVolume() int {
-	out, err := exec.Command("pactl", "get-sink-volume", "@DEFAULT_SINK@").Output()
+	out, err := runCommand("pactl", "get-sink-volume", "@DEFAULT_SINK@")
 	if err != nil {
 		return -1
 	}
